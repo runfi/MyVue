@@ -17,7 +17,7 @@
  * ****/
 
 // 解析这部分直接用了Vue原本的（太噩梦了这块，我学废了）
-const vueCompiler = require('./vueCompiler')
+const vueCompiler = require('./vueCompiler.js')
 
 const parse = vueCompiler.parse
 

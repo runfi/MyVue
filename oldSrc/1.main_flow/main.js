@@ -1,5 +1,5 @@
 // main.js
-import MyVue from './instance'
+import MyVue from './instance.js'
 
 // 一个基础的Vue模版，总得有个MyVue的Class吧
 new MyVue({

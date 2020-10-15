@@ -5,7 +5,7 @@ MyVue 需要解决三个问题
 3. 将事件绑定到dom元素上面
 ****/
 
-import { templateToDom } from './compiler'
+import { templateToDom } from './compiler.js'
 
 export default class MyVue {
     constructor(options) {
@@ -48,6 +48,19 @@ export default class MyVue {
     }
 }
 
+
+function query(el){
+    if(typeof el === 'string'){
+        const selected = document.querySelector(el)
+        if(!selected){
+            return document.createElement('div')
+        }
+        return selected
+    }else{
+        return el
+    }
+}
+
 // 问题一 （实现data和methods通过this访问）
 // Vue 是通过 Object.defineProperty 修改了 this 的 get 和 set 函数，这样当访问 this.count 的时候，其实ijiushi访问this._data.count
 
@@ -67,11 +80,28 @@ function initData(vm) {
     })
 }
 
+function initMethod(vm) {
+    const event  = vm.$options.methods
+    Object.keys(event).forEach(key => {
+
+        // bind方法调用一个对象的一个方法，以另一个对象替换当前对象。
+        // 特定的作用域中调用函数，等于设置函数体内this对象的值，以扩充函数赖以运行的作用域。
+        // event.bin(vm) 使用vm的上下文代替了event的上下文，这时候的this指向event
+        // bind跟call不一样的是，bind返回的是一个函数，call返回的是函数执行后的结果
+        vm[key] = event[key].bind(vm)
+    })
+}
+
+function noop () {}
+const sharedPropertyDefinition = {
+    enumerable: true,
+    configurable: true,
+    get: noop,
+    set: noop
+}
+
 function proxy(target, sourceKey, key) {
-    const sharedPropertyDefinition = {
-        enumerable: true,
-        configurable: true
-    }
+    
     sharedPropertyDefinition.get = function proxyGetter() {
         return this[sourceKey][key]
     }
@@ -90,18 +120,6 @@ function proxy(target, sourceKey, key) {
     // 可以大致这么理解在这里改写成为了vm.key = sharedPropertyDefinition
     // 从而可以通过 this.xxx / vm.xxxx 进行访问
     Object.defineProperty(target, key, sharedPropertyDefinition)
-}
-
-function initMethod(vm) {
-    const event  = vm.$options.methods
-    Object.keys(event).forEach(key => {
-
-        // bind方法调用一个对象的一个方法，以另一个对象替换当前对象。
-        // 特定的作用域中调用函数，等于设置函数体内this对象的值，以扩充函数赖以运行的作用域。
-        // event.bin(vm) 使用vm的上下文代替了event的上下文，这时候的this指向event
-        // bind跟call不一样的是，bind返回的是一个函数，call返回的是函数执行后的结果
-        vm[key] = event.bind(vm)
-    })
 }
 
 // 问题二 （实现template模版转换为dom元素）

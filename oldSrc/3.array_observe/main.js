@@ -1,26 +1,29 @@
-import MyVue from './instance'
+import YourVue from './instance'
 
-new MyVue({
+new YourVue({
     el: '#app',
     data: {
         count: 0,
-        message: '这是一个message'
+        message: 'message',
+        items: [1, 2, 3, 0, 5]
     },
     template: `
       <div>
-          <h4>{{message}}</h4>
+          array: {{items}}
           <div>{{count}}</div>
           <button @click="addCount">addCount</button>
+          <h4>{{message}}</h4>
           <button @click="decCount">decCount</button>
       </div>
   `,
     methods: {
-        // 相对第一篇 这里直接使用了this.count来修改值
         addCount() {
             this.count += 1
+            this.items.push(this.count)
         },
         decCount() {
             this.count -= 1
+            this.items.pop()
         }
     }
 })

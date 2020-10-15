@@ -1,13 +1,8 @@
-/*** 
-MyVue 需要解决跟第一篇不一样的三个问题（mvvm相关）
-1. 通过 Object.defineProperty 修改 get 和 set 方法，实现订阅发布。
-2. 为什么要用栈结构的 Dep.target 来存储当前 watcher ？
-3. 为什么 watcher 每次更新后要 cleanupDeps，以及是如何 cleanupDeps 的？
-****/
-
-import { templateToDom } from './compiler'
-import { observe } from './observer/index'
-import { Watcher} from './observer/watcher'
+import { templateToCode } from '../compiler/compiler'
+import { observe } from '../observer/index'
+import { Watcher} from '../observer/watcher'
+import { patch } from '../vdom/patch'
+import { initRender } from './render'
 
 export default class MyVue{
     constructor(options){
@@ -15,31 +10,41 @@ export default class MyVue{
     }
     _init(options){
         this.$options = options
+        initRender(this)    // 初始化了render
         if (options.data) initData(this)
         if (options.methods) initMethod(this)
-        if (options.el) {
+        if(options.el){
             this.$mount()
         }
     }
     $mount(){
-        // this.update()
+        const options = this.$options
+        if (!options.render) {
+            let template = options.template
+            if (template) {
+                const code = templateToCode(template)   // 之前是templateToDom
+                // 可以看到templateToCode最后生成的字符串代码是 with(this){return ${code}}，那么怎样将它变成可执行的函数呢？就是通过 new Function 来实现啦。
+                const render = new Function(code).bind(this)
+                options.render = render
+            }
+        }
         const vm = this
         new Watcher(vm, vm.update.bind(vm), noop)
     }
     update(){
-        let el = this.$options.el
-        el = el && query(el)
         if(this.$options.template){
-            this.el = templateToDom(this.$options.template, this)
-            el.innerHTML = ''
-            el.appendChild(this.el)
+            if(this._isMounted){
+                const vnode = this.$options.render()
+                patch(this.vnode, vnode)
+                this.vnode = vnode
+            }else{
+                this.vnode = this.$options.render()
+                let el = this.$options.el
+                this.el = el && query(el)
+                patch(this.vnode, null, this.el)
+                this._isMounted = true
+            }
         }
-    }
-    setState(data){
-        Object.keys(data).forEach(key => {
-            this[key] = data[key]
-        })
-        this.update()
     }
 }
 
@@ -71,7 +76,7 @@ function initData(vm){
     Object.keys(data).forEach(key => {
         proxy(vm, '_data', key)
     })
-    observe(data)   // 2.将data修改为可观测对象
+    observe(data)
 }
 function noop () {}
 const sharedPropertyDefinition = {
