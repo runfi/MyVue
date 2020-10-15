@@ -67,11 +67,11 @@ function createDom(ast, app) {
 // 生成的 ast 中会记录这个元素上的事件和事件对应的函数{click: ƒ}，但是并不是直接把这个函数添加到事件上，而是包装了一层invoker函数，这样当绑定的函数发生变化的时候，不用重新解绑再绑定。而是每次执行该函数的时候去寻找要执行的函数。
 //  updateListeners(root, ast.events, {}, app)
 function updateListeners(elm, on, oldOn, context) {
-    for(let name in on) {
+    for(let name in on) {   // 遍历事件
         let cur = context[on[name].value]
         let old = oldOn[name]
-        if(isUndef(old)) {  // 判断是否未定义
-            if(isUndef(cur.fns)) {
+        if(isUndef(old)) {  // 旧节点不存在
+            if(isUndef(cur.fns)) {      // createFunInvoker返回事件最终执行的回调函数
                 cur = on[name] = createFnInvoker(cur)
             }
             elm.addEventListener(name, cur)
@@ -80,8 +80,9 @@ function updateListeners(elm, on, oldOn, context) {
             on[name] = old
         }
     }
-    for (let name in oldOn) {
+    for (let name in oldOn) {   // 旧节点存在，解除旧节点上的绑定事件
         if (isUndef(on[name])) {
+             // 移除事件监听
             elm.removeEventListener(name, oldOn[name])
         }
     }
